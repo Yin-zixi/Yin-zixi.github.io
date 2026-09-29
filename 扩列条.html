@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-locale="zh-CN" data-theme="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="使用 ProfileCraft 创建的个人扩列条">
+    <title>小芝士 - 扩列条</title>
+    <link href="https://fonts.loli.net/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* App.css 内容 */
+        ﻿@import './modules/app-shell.css';
+@import './modules/error-boundary.css';
+@import './modules/delete-controls.css';
+@import './modules/dock.css';
+@import './modules/ai-chat-panel.css';
+
+/* ===================================
+   1. CSS 变量和设计系统
+   =================================== */
+:root {
+    /* 主题颜色 */
+    --theme-accent: #FFC300;
+    --theme-tag-bg: #FFF5CC;
+    --theme-tag-bg-alt: #FFE082;
+    --theme-bg-page: #FFFDF5;
+    --theme-text-strong: #8B4513;
+    --theme-divider: #D4A017;
+    --theme-tag-hover-bg: #FFE082;
+    --hover-bg-color: rgba(255, 195, 0, 0.1);
+    --qr-code-fg-color: var(--theme-text-strong);
+
+    /* UI 颜色 */
+    --ui-text-primary: #1d1d1f;
+    --ui-text-secondary: #333333;
+    --ui-text-tertiary: #86868b;
+    --ui-bg-card: #ffffff;
+    --ui-border-default: #e5e5e5;
+    --delete-red: #ef4444;
+    --delete-red-hover: #dc2626;
+    --button-text-on-accent: #FFFFFF;
+    --toolbar-bg: #ffffff;
+    --toolbar-border: #dbdbdb;
+    --toolbar-button-active-bg: #f0f0f0;
+    --success-green: #10b981;
+
+    /* 间距系统 */
+    --space-xs: 4px;
+    --space-s: 8px;
+    --space-m: 16px;
+    --space-l: 24px;
+    --space-xl: 32px;
+
+    /* 圆角系统 */
+    --radius-xs: 6px;
+    --radius-s: 8px;
+    --radius-m: 12px;
+    --radius-l: 20px;
+    --radius-full: 50%;
+    
+    /* 阴影系统 */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
+    --shadow-xl: 0 10px 30px rgba(0, 0, 0, 0.2);
+    
+    /* 过渡时间 */
+    --transition-fast: 0.15s;
+    --transition-base: 0.2s;
+    --transition-slow: 0.3s;
+
+    /* 毛玻璃效果 */
+    --backdrop-blur: blur(30px) saturate(190%);
+
+    /* Z-index 层级 */
+    --z-dock: 1002;
+    --z-popover: 1003;
+    --z-dropdown: 2000;
+}
+
+/* 暗色主题变量 */
+body[data-theme='dark'] {
+    --theme-bg-page: #1a1a1c;
+    --hover-bg-color: rgba(255, 195, 0, 0.08);
+    --ui-text-primary: #f5f5f7;
+    --ui-text-secondary: #a1a1a6;
+    --ui-text-tertiary: #6e6e73;
+    --ui-bg-card: #2c2c2e;
+    --ui-border-default: #38383a;
+    --toolbar-bg: #2c2c2e;
+    --toolbar-border: #38383a;
+    --toolbar-button-active-bg: #3a3a3c;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* ===================================
+   2. 基础样式和布局
+   =================================== */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "SF Pro SC", "SF Pro Display", "SF Pro Icons", 
+                 "Helvetica Neue", Helvetica, Arial, "Inter", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--theme-bg-page);
+    margin: 0;
+    padding-top: 0; /* Remove top offset for old toolbar */
+    padding-bottom: 140px; /* Space for the bottom dock */
+    transition: background-color var(--transition-slow) ease-in-out;
+}
+
+/* 根据语言设置字体 */
+html[data-locale="zh-CN"] body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "微软雅黑", 
+                 "Hiragino Sans GB", "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
+}
+
+html[data-locale="ja-JP"] body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "ヒラギノ角ゴ ProN", 
+                 "Yu Gothic", "游ゴシック", "Meiryo", "メイリオ", "Source Han Sans JP", 
+                 "Noto Sans CJK JP", sans-serif;
+}
+
+html[data-locale="ko-KR"] body {
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", 
+                 "Nanum Gothic", "나눔고딕", "Source Han Sans KR", "Noto Sans CJK KR", sans-serif;
+}
+
+html[data-locale="en-US"] body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", 
+                 "Helvetica Neue", Arial, "Inter", sans-serif;
+}
+
+/* 主容器 */
+main#profileCardContainer {
+    width: 100%;
+    max-width: 1024px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    padding: var(--space-xl) var(--space-m);
+}
+
+/* 网格布局 */
+.grid-container {
+    display: grid;
+    gap: var(--space-l);
+    width: 100%;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+    .grid-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .grid-container {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+/* 卡片跨度样式 */
+.profile-card-span,
+.about-me-card-span,
+.oshi-card-span,
+.full-width-card-span { 
+    grid-column: span 1; 
+}
+
+@media (min-width: 768px) {
+    .about-me-card-span,
+    .oshi-card-span,
+    .full-width-card-span { 
+        grid-column: span 2; 
+    }
+}
+
+@media (min-width: 1024px) {
+    .oshi-card-span,
+    .full-width-card-span { 
+        grid-column: span 3; 
+    }
+}
+
+/* 头部样式 */
+.main-header-container {
+    margin-top: 2rem;
+    margin-bottom: var(--space-xl);
+    text-align: center;
+}
+
+.main-title {
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: var(--ui-text-primary);
+    margin-bottom: var(--space-s);
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    color: var(--ui-text-tertiary);
+    font-weight: 500;
+}
+
+/* 页脚样式 */
+.page-footer {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--ui-text-tertiary);
+    margin-top: 4rem;
+    padding-bottom: 2rem;
+}
+
+
+/* ===================================
+   4. 卡片样式
+   =================================== */
+.ui-card {
+    background-color: var(--ui-bg-card);
+    border-radius: var(--radius-l);
+    border: 1px solid var(--ui-border-default); 
+    box-shadow: var(--shadow-md);
+    transition: box-shadow var(--transition-base) ease-in-out, 
+                top var(--transition-base) ease-in-out, 
+                background-color var(--transition-base) ease-in-out;
+    overflow: visible;
+    position: relative;
+    top: 0;
+    padding: 0 var(--space-l) var(--space-m) var(--space-l);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.card-inner-content {
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.card-top-controls {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    min-height: 32px;
+    margin-top: 10px;
+    margin-bottom: 6px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-base);
+}
+
+.card-top-controls.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.ui-card:hover {
+    box-shadow: var(--shadow-lg);
+    top: -2px;
+}
+
+.section-title-container {
+    margin-top: var(--space-s);
+}
+
+h2.section-title {
+    font-size: 1.3rem; 
+    font-weight: 600;
+    color: var(--ui-text-primary);
+    margin: 0 0 var(--space-s) 0;
+    padding-bottom: var(--space-m);
+    border-bottom: 1px solid var(--ui-border-default);
+}
+
+.card-content-wrapper {
+    margin-top: var(--space-s);
+}
+
+.content-text {
+    color: var(--ui-text-secondary);
+    line-height: 1.7;
+    font-size: 0.9375rem; 
+    margin-bottom: var(--space-s);
+}
+
+.content-text:last-child { 
+    margin-bottom: 0; 
+}
+
+.content-text strong { 
+    color: var(--ui-text-primary); 
+    font-weight: 500; 
+}
+
+.action-button-text-with-icon {
+    background-color: transparent;
+    border: 1px dashed var(--ui-border-default);
+    border-radius: var(--radius-m);
+    padding: 12px; 
+    color: var(--ui-text-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-s);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    margin-top: var(--space-m);
+    width: 100%;
+}
+
+.action-button-text-with-icon:hover {
+    border-color: var(--theme-accent);
+    background-color: var(--hover-bg-color);
+    color: var(--theme-text-strong);
+}
+
+/* ===================================
+   5. 可编辑文本和富文本工具栏
+   =================================== */
+[contenteditable] {
+    cursor: text;
+    transition: background-color var(--transition-base) ease-in-out, 
+                box-shadow var(--transition-base) ease-in-out;
+    padding: 2px 4px;
+    margin: -2px -4px;
+    border-radius: var(--radius-xs);
+    outline: none;
+    border: 1px solid transparent;
+}
+
+[contenteditable]:hover {
+    background-color: var(--hover-bg-color);
+}
+
+[contenteditable].is-focused {
+    background-color: var(--hover-bg-color);
+    box-shadow: 0 0 0 2px var(--theme-accent);
+    border-color: var(--theme-accent);
+}
+
+/* 富文本格式化工具栏 */
+.rich-text-toolbar {
+    position: absolute;
+    z-index: 1001;
+    background-color: var(--toolbar-bg);
+    border: 1px solid var(--toolbar-border);
+    border-radius: var(--radius-s);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    padding: var(--space-xs);
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    transition: opacity var(--transition-fast) ease-in-out, 
+                transform var(--transition-fast) ease-in-out;
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+    pointer-events: none;
+}
+
+.rich-text-toolbar.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.rich-text-toolbar button {
+    background: none;
+    border: none;
+    border-radius: var(--radius-xs);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--ui-text-secondary);
+    transition: background-color var(--transition-base) ease;
+}
+
+.rich-text-toolbar button:hover {
+    background-color: var(--toolbar-button-active-bg);
+}
+
+.rich-text-toolbar button.is-active {
+    background-color: var(--theme-tag-bg);
+    color: var(--theme-text-strong);
+}
+
+.toolbar-separator {
+    width: 1px;
+    height: 20px;
+    background-color: var(--toolbar-border);
+    margin: 0 4px;
+}
+
+.rich-text-toolbar .toolbar-input {
+    border: 1px solid var(--toolbar-border);
+    border-radius: var(--radius-xs);
+    padding: 4px 6px;
+    font-size: 14px;
+    background-color: var(--ui-bg-card);
+    color: var(--ui-text-primary);
+    transition: border-color var(--transition-base) ease;
+}
+
+.rich-text-toolbar .toolbar-input:focus {
+    outline: none;
+    border-color: var(--theme-accent);
+}
+
+.rich-text-toolbar .toolbar-input.font-size-input {
+    width: 45px;
+}
+
+.rich-text-toolbar .toolbar-input.font-family-input {
+    width: 120px;
+}
+
+.rich-text-toolbar label {
+    font-size: 13px;
+    color: var(--ui-text-tertiary);
+    margin-left: 4px;
+    margin-right: 2px;
+}
+
+/* ===================================
+   6. 按钮和标签组件
+   =================================== */
+/* 操作按钮 */
+.action-button { 
+    background: rgba(255, 255, 255, 0.7); 
+    backdrop-filter: blur(4px); 
+    border: 1px solid var(--ui-border-default); 
+    cursor: pointer; 
+    padding: 4px; 
+    border-radius: var(--radius-full); 
+    width: 28px; 
+    height: 28px; 
+    display: inline-flex; 
+    align-items: center; 
+    justify-content: center; 
+    transition: all var(--transition-base); 
+    color: var(--ui-text-secondary); 
+}
+
+.action-button:hover { 
+    background-color: var(--hover-bg-color); 
+    transform: scale(1.1); 
+}
+
+/* 删除状态 */
+.is-deleting {
+    background-color: rgba(239, 68, 68, 0.05) !important;
+    box-shadow: inset 0 0 0 1px var(--delete-red), var(--shadow-lg);
+}
+
+.tag-wrapper.is-deleting {
+    box-shadow: none;
+}
+
+.tag-wrapper.is-deleting > span {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    box-shadow: inset 0 0 0 1px var(--delete-red);
+}
+
+.element-container { 
+    position: relative; 
+    padding: var(--space-s) 0;
+    border-radius: var(--radius-s);
+    transition: background-color var(--transition-base) ease-in-out, 
+                box-shadow var(--transition-base) ease-in-out;
+}
+
+/* 标签样式 */
+.tag-wrapper {
+    display: inline-block;
+    position: relative;
+    border-radius: var(--radius-s);
+}
+
+.tag, 
+.oshi-tag, 
+.oshi-meta-tag { 
+    display: inline-block; 
+    padding: 0.3rem 0.8rem; 
+    border-radius: var(--radius-s); 
+    font-size: 0.8125rem; 
+    font-weight: 500; 
+    margin: 0.25rem; 
+    position: relative; 
+    transition: all var(--transition-base) ease; 
+}
+
+.tag { 
+    background-color: var(--theme-tag-bg); 
+    color: var(--theme-text-strong); 
+}
+
+.oshi-tag { 
+    background-color: var(--theme-tag-bg-alt); 
+    color: var(--theme-text-strong); 
+}
+
+.oshi-meta-tag { 
+    background-color: transparent; 
+    color: var(--theme-text-strong); 
+    font-style: italic; 
+    border: 1px dashed var(--theme-accent); 
+}
+
+.tag-wrapper:hover .tag, 
+.tag-wrapper:hover .oshi-tag, 
+.tag-wrapper:hover .oshi-meta-tag {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.add-tag-button-container { 
+    display: flex; 
+    align-items: center; 
+    gap: 5px; 
+    margin-top: 0.5rem; 
+}
+
+.add-tag-input { 
+    padding: 6px 10px; 
+    border-radius: var(--radius-xs); 
+    border: 1px solid var(--ui-border-default); 
+    font-size: 0.85rem; 
+    flex-grow: 1; 
+    transition: border-color var(--transition-base);
+    margin-left: 8px; 
+}
+
+.add-tag-input:focus { 
+    border-color: var(--theme-accent); 
+    outline: none; 
+}
+
+/* ===================================
+   7. 内容区块样式
+   =================================== */
+/* 个人资料区块布局 */
+.profile-section-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+        "avatar"
+        "info"
+        "qrcode";
+    gap: var(--space-m);
+    justify-items: center;
+}
+
+.avatar-container {
+    grid-area: avatar;
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    background-color: #eee;
+    border: 3px solid var(--theme-accent);
+    cursor: pointer;
+    position: relative;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.profile-info-text {
+    grid-area: info;
+    align-self: center;
+    text-align: left;
+    max-width: 300px; 
+}
+
+.hidden-file-input {
+    display: none;
+}
+
+.profile-item-row {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    position: relative;
+}
+
+.profile-item-label {
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.profile-item-colon {
+    margin-left: 2px;
+}
+
+.profile-item-value {
+    word-break: break-word;
+}
+
+.delete-item-btn {
+    position: absolute;
+    right: -28px;
+    top: 0;
+    width: 24px;
+    height: 24px;
+    padding: 4px;
+    opacity: 0;
+    transition: opacity var(--transition-base);
+    z-index: 10;
+}
+
+.profile-item-row:hover .delete-item-btn {
+    opacity: 1;
+}
+
+.add-item-button-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.add-item-btn {
+    width: auto;
+    height: auto;
+    padding: 4px 12px;
+    font-size: 12px;
+    border-radius: 12px;
+}
+
+.icon-inline-left {
+    margin-right: 4px;
+}
+
+.qr-code-wrapper {
+    grid-area: qrcode;
+    justify-self: center;
+    margin-top: var(--space-m);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.avatar-container img { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+}
+
+.avatar-container:hover::after { 
+    content: var(--avatar-click-text, '点击更换');
+    position: absolute; 
+    bottom: 0; 
+    left: 0; 
+    width: 100%; 
+    background: rgba(0, 0, 0, 0.5); 
+    color: white; 
+    text-align: center; 
+    font-size: 0.7rem; 
+    padding: 4px 0; 
+}
+
+.qr-code-container { 
+    border-radius: var(--radius-m); 
+    overflow: hidden; 
+    padding: 4px; 
+    background: var(--ui-bg-card);
+}
+
+.qr-code-link-input { 
+    font-size: 0.8rem; 
+    padding: 4px; 
+    border: 1px solid var(--ui-border-default); 
+    border-radius: var(--radius-xs); 
+    max-width: 180px; 
+    box-sizing: border-box; 
+    text-align: center; 
+    margin-top: 0.5rem;
+}
+
+.qr-code-wrapper .text-sm { 
+    font-size: 0.8rem; 
+    color: var(--ui-text-tertiary); 
+    margin-top: 0.25rem; 
+}
+
+.card-content-subheading { 
+    font-weight: 600; 
+    color: var(--ui-text-primary); 
+    font-size: 1.125rem; 
+    margin: var(--space-s) 0; 
+    padding-bottom: var(--space-s); 
+    border-bottom: 1px solid var(--toolbar-button-active-bg);
+}
+
+/* 标签组布局 */
+.tag-group-container, 
+.music-game-category, 
+.oshi-tag-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-s);
+    margin-bottom: var(--space-m);
+    align-items: center;
+}
+
+.music-game-label { 
+    font-weight: 500; 
+    color: var(--ui-text-primary); 
+    font-size: 0.95rem;
+    margin-right: var(--space-s);
+    margin-left: var(--space-xs);
+}
+
+.oshi-tag-container { 
+    align-items: baseline; 
+}
+
+/* ===================================
+   8. 模态框样式
+   =================================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background: white;
+    padding: var(--space-l);
+    border-radius: var(--radius-l);
+    box-shadow: var(--shadow-xl);
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 976px) {
+    .modal-content {
+        width: 70%;
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--ui-border-default);
+    padding-bottom: var(--space-m);
+    margin-bottom: var(--space-l);
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--ui-text-primary);
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ui-text-tertiary);
+    padding: var(--space-s);
+    border-radius: var(--radius-full);
+    transition: background-color var(--transition-base);
+}
+
+.modal-close-btn:hover {
+    background-color: var(--toolbar-button-active-bg);
+}
+
+.modal-body {
+    overflow-y: auto;
+}
+
+.modal-intro-text {
+    margin-bottom: var(--space-m);
+    color: var(--ui-text-secondary);
+    opacity: 0.8;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-m);
+    margin-top: var(--space-l);
+}
+
+.modal-button-secondary, 
+.modal-button-primary {
+    padding: var(--space-s) var(--space-m);
+    border-radius: var(--radius-s);
+    border: 1px solid var(--ui-border-default);
+    background-color: transparent;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all var(--transition-base) ease;
+}
+
+.modal-button-secondary {
+    color: var(--ui-text-secondary);
+}
+
+.modal-button-secondary:hover {
+    background-color: var(--toolbar-button-active-bg);
+}
+
+.modal-button-primary {
+    background-color: var(--theme-accent);
+    color: var(--button-text-on-accent);
+    border-color: var(--theme-accent);
+}
+
+.modal-button-primary:hover {
+    opacity: 0.85;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal-button-danger {
+    background-color: var(--delete-red);
+    border-color: var(--delete-red);
+}
+
+.confirm-dialog-message {
+    color: var(--ui-text-secondary);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.confirm-dialog-message.is-dangerous {
+    color: var(--delete-red);
+}
+
+/* 模板选择网格 */
+.template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-m);
+    padding-top: 2px; 
+}
+
+.template-option {
+    border: 1px solid var(--ui-border-default);
+    border-radius: var(--radius-m);
+    padding: var(--space-m);
+    cursor: pointer;
+    transition: all var(--transition-base) ease-in-out;
+}
+
+.template-option:hover {
+    border-color: var(--theme-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.template-name {
+    margin: 0 0 var(--space-s) 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--ui-text-primary);
+}
+
+.template-description {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--ui-text-tertiary);
+}
+
+
+
+/* React Grid Layout Overrides */
+.react-grid-item.react-grid-placeholder {
+    background: rgba(255, 195, 0, 0.2) !important;
+    border-radius: var(--radius-l) !important;
+    opacity: 0.5 !important;
+}
+
+.react-grid-item {
+    transition: transform var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
+}
+
+.react-grid-item.react-draggable-dragging,
+.react-grid-item.resizing {
+    z-index: 40;
+}
+
+.react-grid-item.react-draggable-dragging .ui-card,
+.react-grid-item.resizing .ui-card {
+    box-shadow: var(--shadow-xl);
+}
+
+.react-resizable-handle {
+    background-image: none !important;
+    width: 20px !important;
+    height: 20px !important;
+    bottom: 5px !important;
+    right: 5px !important;
+    cursor: se-resize !important;
+}
+
+/* macOS/iOS-style Menu (Popover) */
+.popover-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.popover-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 200px;
+    background-color: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    border-radius: 12px; /* Apple Menu Corner */
+    border: 0.5px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 2000;
+    transform-origin: top right;
+    animation: appleMenuIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body[data-theme='dark'] .popover-menu {
+    background-color: rgba(44, 44, 46, 0.82);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.popover-item {
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--ui-text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background-color 0.15s;
+}
+
+.popover-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+body[data-theme='dark'] .popover-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+@keyframes appleMenuIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.react-resizable-handle::after {
+    content: "";
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid var(--ui-text-tertiary);
+    border-bottom: 2px solid var(--ui-text-tertiary);
+}
+
+/* Drag Handle */
+.drag-handle {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    justify-self: center;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    padding: 4px 8px;
+    z-index: 10;
+    color: var(--ui-text-tertiary);
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Width Control */
+.width-control-container {
+    position: relative;
+    top: auto;
+    left: auto;
+    justify-self: start;
+    z-index: 20;
+}
+
+.width-control-btn {
+    padding: 4px;
+    border-radius: var(--radius-s);
+    background: transparent;
+    border: none;
+    color: var(--ui-text-tertiary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.width-control-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--ui-text-primary);
+}
+
+.width-dropdown {
+    position: absolute;
+    left: 0;
+    top: 100%;
+    margin-top: 4px;
+    background-color: var(--ui-bg-card);
+    border: 1px solid var(--ui-border-default);
+    border-radius: var(--radius-s);
+    box-shadow: var(--shadow-lg);
+    padding: 4px;
+    min-width: 120px;
+    display: none;
+    z-index: 50;
+}
+
+/* Invisible bridge to prevent hover loss */
+.width-dropdown::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 0;
+    width: 100%;
+    height: 10px;
+}
+
+.width-control-container:hover .width-dropdown {
+    display: block;
+}
+
+.width-control-container.is-open .width-dropdown {
+    display: block;
+}
+
+.width-dropdown-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ui-text-secondary);
+    border-radius: var(--radius-xs);
+}
+
+.width-dropdown-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--ui-text-primary);
+}
+
+.width-dropdown-item.is-active {
+    background-color: var(--hover-bg-color);
+    color: var(--theme-text-strong);
+    font-weight: 600;
+}
+
+@media (hover: none) {
+    .card-top-controls {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+@media print {
+    .delete-item-btn,
+    .add-item-btn {
+        display: none !important;
+    }
+}
+
+        
+        /* 当前主题 CSS 内容 */
+        
+        
+        /* 动态主题变量 */
+        
+    :root {
+        --theme-accent: #29b0c2;
+        --theme-bg-page: #f4fbfb;
+        --theme-tag-bg: #d4eff2;
+        --theme-tag-bg-alt: #94d7e0;
+        --theme-text-strong: #186974;
+        --theme-divider: #53bfce;
+        --button-text-on-accent: #000000;
+        --qr-code-fg-color: #186974;
+    }
+    
+
+        /* 导出时隐藏的元素 */
+        .editor-toolbar,
+        .edit-popup,
+        .rich-text-toolbar,
+        .action-button,
+        .delete-action-btn,
+        .add-tag-button-container,
+        .tag-actions-container,
+        .delete-element-btn,
+        .card-actions-container,
+        .qr-code-link-input,
+        .hamburger-menu,
+        .action-button-text-with-icon,
+        .drag-handle,
+        .width-control-container,
+        .react-resizable-handle,
+        .delete-item-btn,
+        .add-item-btn,
+        .avatar-container:hover::after,
+        [contenteditable]:hover { 
+            display: none !important;
+        }
+
+        /* 保持卡片在编辑器中的实际位置 */
+        main#profileCardContainer {
+            width: 100% !important;
+            max-width: 1080px !important;
+            margin: 0 auto !important;
+            padding: 48px 32px 32px 32px !important;
+            box-sizing: border-box !important;
+        }
+        .app-grid-shell {
+            width: 100% !important;
+        }
+        .layout {
+            height: auto !important;
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 32px 24px !important;
+            width: 100% !important;
+        }
+        .react-grid-item {
+            position: relative !important;
+            transform: none !important;
+            top: auto !important;
+            left: auto !important;
+            width: auto !important;
+            height: auto !important;
+            margin: 0 !important;
+        }
+        .profile-card-span { grid-column: span 1 !important; }
+        .about-me-card-span { grid-column: span 2 !important; }
+        .oshi-card-span,
+        .full-width-card-span { grid-column: span 3 !important; }
+
+        .card-top-controls {
+            display: none !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+        }
+
+        .section-title-container {
+            margin-top: 30px !important;
+        }
+
+        h2.section-title {
+            border-bottom: 1px solid var(--theme-divider, var(--ui-border-default, rgba(0, 0, 0, 0.18))) !important;
+            padding-bottom: var(--space-m) !important;
+        }
+
+        .page-footer {
+            display: block !important;
+            margin-top: 48px !important;
+            padding-bottom: 32px !important;
+            position: relative !important;
+            z-index: 1 !important;
+        }
+
+        .sidebar-container,
+        .hamburger-menu {
+            display: none !important;
+        }
+        
+        /* 静态元素样式 */
+        [contenteditable] {
+            cursor: default !important;
+            border: none !important;
+            background-color: transparent !important;
+            outline: none !important;
+        }
+        
+        /* 移除工具栏预留空间 */
+        body { 
+            padding-top: 0 !important; 
+        }
+        
+        /* 确保头像不可点击 */
+        .avatar-container {
+            cursor: default !important;
+        }
+    </style>
+</head>
+<body data-theme="default">
+    <main id="profileCardContainer">
+        <header class="main-header-container"><h1 class="main-title main-title-text" style="font-weight: 700; font-size: 40px; background-color: transparent; cursor: default;">小芝士</h1><p class="subtitle subtitle-text" style="font-weight: 500; font-size: 20px; background-color: transparent; cursor: default;">ID: chizukuo</p></header><div class="app-grid-shell"><div class="react-grid-layout layout" style="height: 1544px;"><div class="react-grid-item profile-card-span react-draggable cssTransforms react-resizable" data-grid="[object Object]" style="width: 299px; height: 850px; position: absolute; transform: translate(24px, 32px);"><div class="ui-card profile-card-span " data-card-id="card_1790648501372_1"><div class="card-inner-content"><div class="card-top-controls "></div><div class="section-title-container"><h2 class="section-title" style="font-weight: 600; font-size: 22px; background-color: transparent; cursor: default;">基本信息</h2></div><div class="card-content-wrapper"><div class="element-container profile-section-layout"><div class="avatar-container" role="button" tabindex="0" aria-label="更换头像" style="cursor: default;"><img alt="用户头像" src="https://q.qlogo.cn/g?b=qq&amp;nk=2723258712&amp;s=160"><input accept="image/*" class="hidden-file-input" type="file"></div><div class="profile-info-text"><div class="content-text mb-1 profile-item-row"><div class="profile-item-label"><span class="" style="background-color: transparent; cursor: default;">昵称</span><span class="profile-item-colon">:</span></div><div class="profile-item-value"><span class="" style="font-weight: 400; font-size: 15px; background-color: transparent; cursor: default;">小芝士</span></div></div><div class="content-text mb-1 profile-item-row"><div class="profile-item-label"><span class="" style="background-color: transparent; cursor: default;">性别</span><span class="profile-item-colon">:</span></div><div class="profile-item-value"><span class="" style="font-weight: 400; font-size: 15px; background-color: transparent; cursor: default;">男</span></div></div><div class="content-text mb-1 profile-item-row"><div class="profile-item-label"><span class="" style="background-color: transparent; cursor: default;">年龄</span><span class="profile-item-colon">:</span></div><div class="profile-item-value"><span class="" style="font-weight: 400; font-size: 15px; background-color: transparent; cursor: default;">XX</span></div></div><div class="content-text mb-1 profile-item-row"><div class="profile-item-label"><span class="" style="background-color: transparent; cursor: default;">常驻</span><span class="profile-item-colon">:</span></div><div class="profile-item-value"><span class="" style="font-weight: 400; font-size: 15px; background-color: transparent; cursor: default;">武汉</span></div></div><div class="content-text mb-1 profile-item-row"><div class="profile-item-label"><span class="" style="background-color: transparent; cursor: default;">MBTI</span><span class="profile-item-colon">:</span></div><div class="profile-item-value"><span class="" style="font-weight: 400; font-size: 15px; background-color: transparent; cursor: default;">INTP-T</span></div></div><div class="add-item-button-container"></div></div><div class="qr-code-wrapper"><div class="qr-code-container" style="border-color: rgb(41, 176, 194);"><svg height="128" width="128" viewBox="0 0 33 33" role="img" class="qr-code"><path fill="#f4fafb" d="M0,0 h33v33H0z" shape-rendering="crispEdges"></path><path fill="#196872" d="M0 0h7v1H0zM9 0h1v1H9zM11 0h3v1H11zM15 0h1v1H15zM17 0h6v1H17zM24 0h1v1H24zM26,0 h7v1H26zM0 1h1v1H0zM6 1h1v1H6zM9 1h1v1H9zM13 1h1v1H13zM19 1h3v1H19zM24 1h1v1H24zM26 1h1v1H26zM32,1 h1v1H32zM0 2h1v1H0zM2 2h3v1H2zM6 2h1v1H6zM8 2h1v1H8zM10 2h1v1H10zM14 2h3v1H14zM19 2h3v1H19zM23 2h2v1H23zM26 2h1v1H26zM28 2h3v1H28zM32,2 h1v1H32zM0 3h1v1H0zM2 3h3v1H2zM6 3h1v1H6zM8 3h3v1H8zM12 3h3v1H12zM16 3h1v1H16zM21 3h1v1H21zM23 3h1v1H23zM26 3h1v1H26zM28 3h3v1H28zM32,3 h1v1H32zM0 4h1v1H0zM2 4h3v1H2zM6 4h1v1H6zM10 4h1v1H10zM15 4h5v1H15zM21 4h1v1H21zM23 4h2v1H23zM26 4h1v1H26zM28 4h3v1H28zM32,4 h1v1H32zM0 5h1v1H0zM6 5h1v1H6zM11 5h2v1H11zM15 5h2v1H15zM19 5h1v1H19zM21 5h1v1H21zM23 5h1v1H23zM26 5h1v1H26zM32,5 h1v1H32zM0 6h7v1H0zM8 6h1v1H8zM10 6h1v1H10zM12 6h1v1H12zM14 6h1v1H14zM16 6h1v1H16zM18 6h1v1H18zM20 6h1v1H20zM22 6h1v1H22zM24 6h1v1H24zM26,6 h7v1H26zM10 7h1v1H10zM14 7h2v1H14zM18 7h2v1H18zM24 7h1v1H24zM3 8h2v1H3zM6 8h2v1H6zM12 8h1v1H12zM18 8h3v1H18zM29 8h2v1H29zM1 9h2v1H1zM5 9h1v1H5zM8 9h1v1H8zM10 9h2v1H10zM13 9h1v1H13zM18 9h1v1H18zM20 9h2v1H20zM23 9h1v1H23zM25 9h1v1H25zM27 9h3v1H27zM0 10h3v1H0zM6 10h2v1H6zM9 10h2v1H9zM13 10h4v1H13zM22 10h3v1H22zM26 10h2v1H26zM31,10 h2v1H31zM1 11h1v1H1zM8 11h1v1H8zM11 11h2v1H11zM14 11h1v1H14zM16 11h2v1H16zM21 11h5v1H21zM27 11h2v1H27zM30 11h2v1H30zM0 12h1v1H0zM4 12h5v1H4zM10 12h1v1H10zM12 12h1v1H12zM17 12h1v1H17zM20 12h2v1H20zM24 12h1v1H24zM26 12h2v1H26zM31,12 h2v1H31zM1 13h1v1H1zM4 13h2v1H4zM8 13h5v1H8zM14 13h4v1H14zM21 13h1v1H21zM23 13h1v1H23zM27 13h1v1H27zM29 13h3v1H29zM0 14h3v1H0zM6 14h2v1H6zM9 14h8v1H9zM19 14h2v1H19zM24 14h1v1H24zM0 15h2v1H0zM3 15h2v1H3zM8 15h2v1H8zM11 15h1v1H11zM15 15h1v1H15zM23 15h1v1H23zM27 15h4v1H27zM2 16h1v1H2zM6 16h1v1H6zM8 16h1v1H8zM10 16h1v1H10zM12 16h3v1H12zM16 16h4v1H16zM25 16h5v1H25zM31 16h1v1H31zM1 17h3v1H1zM8 17h1v1H8zM12 17h1v1H12zM16 17h1v1H16zM18 17h1v1H18zM20 17h3v1H20zM24 17h2v1H24zM27 17h3v1H27zM31,17 h2v1H31zM5 18h2v1H5zM9 18h1v1H9zM12 18h1v1H12zM16 18h1v1H16zM19 18h2v1H19zM23 18h1v1H23zM29,18 h4v1H29zM0 19h2v1H0zM5 19h1v1H5zM7 19h1v1H7zM10 19h3v1H10zM14 19h1v1H14zM18 19h1v1H18zM20 19h1v1H20zM22 19h3v1H22zM27 19h4v1H27zM32,19 h1v1H32zM2 20h2v1H2zM5 20h2v1H5zM8 20h1v1H8zM11 20h2v1H11zM14 20h1v1H14zM16 20h2v1H16zM19 20h2v1H19zM24 20h2v1H24zM29 20h1v1H29zM31,20 h2v1H31zM0 21h1v1H0zM9 21h1v1H9zM11 21h1v1H11zM15 21h2v1H15zM20 21h1v1H20zM22 21h1v1H22zM26 21h4v1H26zM0 22h1v1H0zM3 22h2v1H3zM6 22h3v1H6zM10 22h1v1H10zM13 22h1v1H13zM15 22h1v1H15zM17 22h3v1H17zM22 22h1v1H22zM24 22h1v1H24zM26 22h3v1H26zM30 22h1v1H30zM32,22 h1v1H32zM0 23h1v1H0zM2 23h4v1H2zM7 23h2v1H7zM10 23h1v1H10zM12 23h1v1H12zM16 23h2v1H16zM22 23h1v1H22zM27 23h1v1H27zM29 23h3v1H29zM0 24h2v1H0zM4 24h1v1H4zM6 24h2v1H6zM9 24h2v1H9zM13 24h1v1H13zM15 24h3v1H15zM20 24h2v1H20zM24 24h6v1H24zM8 25h1v1H8zM10 25h2v1H10zM13 25h1v1H13zM16 25h4v1H16zM22 25h1v1H22zM24 25h1v1H24zM28 25h1v1H28zM30 25h1v1H30zM0 26h7v1H0zM8 26h1v1H8zM10 26h1v1H10zM13 26h4v1H13zM18 26h5v1H18zM24 26h1v1H24zM26 26h1v1H26zM28 26h3v1H28zM0 27h1v1H0zM6 27h1v1H6zM11 27h1v1H11zM17 27h2v1H17zM20 27h1v1H20zM23 27h2v1H23zM28 27h1v1H28zM30 27h2v1H30zM0 28h1v1H0zM2 28h3v1H2zM6 28h1v1H6zM8 28h1v1H8zM10 28h4v1H10zM16 28h1v1H16zM20 28h2v1H20zM23 28h7v1H23zM31 28h1v1H31zM0 29h1v1H0zM2 29h3v1H2zM6 29h1v1H6zM8 29h1v1H8zM10 29h2v1H10zM13 29h1v1H13zM16 29h1v1H16zM18 29h1v1H18zM21 29h1v1H21zM23 29h1v1H23zM25 29h1v1H25zM27 29h1v1H27zM29 29h1v1H29zM31 29h1v1H31zM0 30h1v1H0zM2 30h3v1H2zM6 30h1v1H6zM11 30h1v1H11zM15 30h1v1H15zM19 30h1v1H19zM21 30h2v1H21zM24 30h1v1H24zM28 30h2v1H28zM31,30 h2v1H31zM0 31h1v1H0zM6 31h1v1H6zM9 31h3v1H9zM13 31h3v1H13zM17 31h1v1H17zM19 31h2v1H19zM25 31h2v1H25zM29,31 h4v1H29zM0 32h7v1H0zM10 32h1v1H10zM12 32h1v1H12zM17 32h1v1H17zM21 32h2v1H21zM24 32h1v1H24zM28 32h1v1H28zM30 32h1v1H30z" shape-rendering="crispEdges"></path></svg></div></div></div></div></div></div></div><div class="react-grid-item about-me-card-span react-draggable cssTransforms react-resizable" data-grid="[object Object]" style="width: 621px; height: 850px; position: absolute; transform: translate(347px, 32px);"><div class="ui-card about-me-card-span " data-card-id="card_1790648501372_2"><div class="card-inner-content"><div class="card-top-controls "></div><div class="section-title-container"><h2 class="section-title" style="font-weight: 600; font-size: 22px; background-color: transparent; cursor: default;">关于我</h2></div><div class="card-content-wrapper"><div class="element-container "><p class="content-text" style="font-weight: 400; font-size: 15px; background-color: transparent; cursor: default;"><strong>女声优痴</strong> | 成分非常复杂，广泛涉猎。Weiss Schwarz 还在入门。偶尔看看地偶</p></div><div class="element-container "><p class="content-text" style="font-weight: 400; font-size: 15px; background-color: transparent; cursor: default;">“自适应在纯良和厄介中切换。”</p></div><div class="element-container "><h3 class="card-content-subheading" style="font-weight: 600; font-size: 18px; background-color: transparent; cursor: default;">爱好:</h3><div class="tag-group-container"><div class="tag-wrapper "><span class="tag"><span class="" style="font-weight: 500; font-size: 13px; background-color: transparent; cursor: default;">音游</span></span></div><div class="tag-wrapper "><span class="tag"><span class="" style="font-weight: 500; font-size: 13px; background-color: transparent; cursor: default;">光棒</span></span></div></div></div><div class="element-container "><h3 class="card-content-subheading" style="font-weight: 600; font-size: 18px; background-color: transparent; cursor: default;">主要涉猎:</h3><div class="tag-group-container"><div class="tag-wrapper "><span class="tag"><span class="" style="font-weight: 500; font-size: 13px; background-color: transparent; cursor: default;">Love Live!</span></span></div><div class="tag-wrapper "><span class="tag"><span class="" style="font-weight: 500; font-size: 13px; background-color: transparent; cursor: default;">少女☆歌剧 Revue Starlight</span></span></div><div class="tag-wrapper "><span class="tag"><span class="" style="font-weight: 500; font-size: 13px; background-color: transparent; cursor: default;">Project Sekai</span></span></div><div class="tag-wrapper "><span class="tag"><span class="" style="font-weight: 500; font-size: 13px; background-color: transparent; cursor: default;">BanG Dream!</span></span></div></div></div><div class="element-container "><h3 class="card-content-subheading" style="font-weight: 600; font-size: 18px; background-color: transparent; cursor: default;">音游偏好:</h3><div class="music-game-category"><span class="music-game-label" style="font-weight: bold; font-size: 15px; background-color: transparent; cursor: default;">街机:</span><div class="tag-wrapper "><span class="tag"><span class="" style="font-weight: 500; font-size: 13px; background-color: transparent; cursor: default;">中二节奏</span></span></div><div class="tag-wrapper "><span class="tag"><span class="" style="font-weight: 500; font-size: 13px; background-color: transparent; cursor: default;">舞萌DX (偶尔打)</span></span></div></div><div class="music-game-category"><span class="music-game-label" style="font-weight: bold; font-size: 15px; background-color: transparent; cursor: default;">移动端:</span><div class="tag-wrapper "><span class="tag"><span class="" style="font-weight: 500; font-size: 13px; background-color: transparent; cursor: default;">BanG Dream!</span></span></div><div class="tag-wrapper "><span class="tag"><span class="" style="font-weight: 500; font-size: 13px; background-color: transparent; cursor: default;">Project Sekai</span></span></div><div class="tag-wrapper "><span class="tag"><span class="" style="font-weight: 500; font-size: 13px; background-color: transparent; cursor: default;"><ruby>ユメステ<rt class="katakana-terminator-rt" data-rt="Yumeste"></rt></ruby></span></span></div><div class="tag-wrapper "><span class="tag"><span class="" style="font-weight: 500; font-size: 13px; background-color: transparent; cursor: default;"><ruby>シャニソン<rt class="katakana-terminator-rt" data-rt="Chanison"></rt></ruby></span></span></div></div></div></div></div></div></div><div class="react-grid-item oshi-card-span react-draggable cssTransforms react-resizable" data-grid="[object Object]" style="width: 944px; height: 598px; position: absolute; transform: translate(24px, 914px);"><div class="ui-card oshi-card-span " data-card-id="card_1790648501372_3"><div class="card-inner-content"><div class="card-top-controls "></div><div class="section-title-container"><h2 class="section-title" style="font-weight: 600; font-size: 22px; background-color: transparent; cursor: default;">我的推し</h2></div><div class="card-content-wrapper"><div class="element-container "><h3 class="card-content-subheading" style="font-weight: 600; font-size: 18px; background-color: transparent; cursor: default;">🎤 女声优</h3><div class="oshi-tag-container"><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">中岛由贵</span></span></div><div class="tag-wrapper "><span class="oshi-meta-tag"><span class="" style="font-weight: 400; font-size: 14px; background-color: transparent; cursor: default;">and all......</span></span></div></div></div><div class="element-container "><h3 class="card-content-subheading" style="font-weight: 600; font-size: 18px; background-color: transparent; cursor: default;">💖 二次元</h3><div class="oshi-tag-container"><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">高坂穗乃果</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">矢泽妮可</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">渡边曜</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">黑泽露比</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">优木雪菜</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">平安名堇</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">户山香澄</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">今井莉莎</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">白金燐子</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">CHU²</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">PAREO</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">朝日六花</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">八幡海铃</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">大场奈奈</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">花里实乃理</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">桃井爱莉</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">小豆泽心羽</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">宵崎奏</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">星井美希</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">如月千早</span></span></div><div class="tag-wrapper "><span class="oshi-tag"><span class="" style="font-weight: 400; font-size: 14.4px; background-color: transparent; cursor: default;">浊心斯卡蒂</span></span></div><div class="tag-wrapper "><span class="oshi-meta-tag"><span class="" style="font-weight: 400; font-size: 14px; background-color: transparent; cursor: default;">and more...</span></span></div></div></div></div></div></div></div></div></div><footer class="page-footer"><p class="" style="background-color: transparent; cursor: default;">© 2026 小芝士. | Powered by <a href="https://tools.chizunet.cc/" target="_blank" rel="noopener noreferrer" style="color: var(--theme-accent); text-decoration: none;">ProfileCraft</a></p></footer>
+    </main>
+</body>
+</html>
